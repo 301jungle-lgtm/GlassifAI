@@ -1,0 +1,4 @@
+module GlassifAICodex {
+  header "GlassifAICodexBridge.h"
+  export *
+}

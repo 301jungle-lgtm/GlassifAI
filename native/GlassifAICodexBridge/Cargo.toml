@@ -1,0 +1,23 @@
+[package]
+name = "glassifai-codex-bridge"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/iannellomarco/GlassifAI"
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+codex-api = { path = "../../vendor/codex/codex-rs/codex-api" }
+codex-http-client = { path = "../../vendor/codex/codex-rs/http-client" }
+codex-protocol = { path = "../../vendor/codex/codex-rs/protocol" }
+http = "1"
+serde_json = "1"
+tokio = { version = "1", features = ["rt", "time", "sync", "macros"] }
+uuid = { version = "1", features = ["v4"] }
+
+
+[patch.crates-io]
+tokio-tungstenite = { git = "https://github.com/openai-oss-forks/tokio-tungstenite", rev = "0e5b2d73aa18dd9f0a50ee9ff199d5aef7594186" }
+tungstenite = { git = "https://github.com/openai-oss-forks/tungstenite-rs", rev = "4fffad30fe373adbdcffab9545e9e9bf4f2fc19f" }

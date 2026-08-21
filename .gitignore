@@ -1,0 +1,21 @@
+.DS_Store
+
+# Xcode
+DerivedData/
+build/
+*.xcuserstate
+xcuserdata/
+*.ipa
+*.dSYM
+
+# Generated embedded Codex framework
+ios/Frameworks/GlassifAICodex.xcframework/
+
+# Rust
+native/GlassifAICodexBridge/target/
+native/GlassifAICodexBridge/build/
+
+# Local configuration
+.env
+.env.*
+!.env.example

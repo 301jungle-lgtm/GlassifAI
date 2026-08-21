@@ -1,0 +1,24 @@
+{
+  "originHash" : "6fce889454567814a6654bff8d601ed7a757e9ea4fa5fe22b106d71b272a415b",
+  "pins" : [
+    {
+      "identity" : "meta-wearables-dat-ios",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/facebook/meta-wearables-dat-ios",
+      "state" : {
+        "revision" : "b67454b6f081373f757476ecb3b4973bf33bc326",
+        "version" : "0.4.0"
+      }
+    },
+    {
+      "identity" : "webrtc-xcframework",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/livekit/webrtc-xcframework.git",
+      "state" : {
+        "revision" : "46f2af86f06b9a8a9158d37cadda5cb5a214e4c4",
+        "version" : "144.7559.11"
+      }
+    }
+  ],
+  "version" : 3
+}
