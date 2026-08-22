@@ -47,6 +47,7 @@ The central design constraint is simple: normal operation must not require a Mac
 | Authentication | Device-code login, polling, token exchange, refresh, model discovery, logout | `Runtime/ChatGPTAuthSession.swift` |
 | Token storage | This-device-only Keychain persistence | `Runtime/ChatGPTKeychain.swift` |
 | Voice session | Audio session, peer connection, data channel, captions, interruption, teardown | `Runtime/GlassifAIRealtimeSession.swift` |
+| Glasses gestures | Capability-free DAT state session that maps fixed temple transitions to microphone mute and call end | `Runtime/GlassesGestureSession.swift` |
 | Native bridge | Codex request construction, realtime call creation, sideband lifecycle, event queue | `native/GlassifAICodexBridge/src/lib.rs` |
 | iPhone camera | Camera authorization, capture session, throttled JPEG production | `Runtime/GlassifAICamera.swift` |
 | Glasses camera | DAT registration, camera permission, stream decoding, throttled JPEG production | `ViewModels/StreamSessionViewModel.swift` |
@@ -55,6 +56,7 @@ The central design constraint is simple: normal operation must not require a Mac
 ## Voice call lifecycle
 
 1. Swift configures `AVAudioSession` for `.playAndRecord` with `.voiceChat` mode.
+   When the glasses source is selected, GlassifAI prefers the available Bluetooth HFP input; output follows the full-duplex voice route. If HFP is unavailable, it falls back to iPhone audio.
 2. `LiveKitWebRTC` creates a peer connection, microphone track, send-only video transceiver, and negotiated data channel.
 3. Swift creates an SDP offer and waits briefly for ICE gathering.
 4. `ChatGPTAuthSession` returns a fresh account-backed access token.
@@ -64,6 +66,25 @@ The central design constraint is simple: normal operation must not require a Mac
 8. Rust joins the call’s authenticated WebSocket sideband on a dedicated Tokio runtime thread.
 9. Audio is carried by WebRTC. Control/delegation events are carried by the sideband and exposed to Swift through a bounded process-local queue.
 10. Teardown closes the sideband, data channel, audio track, peer connection, and audio session.
+
+
+## Hands-free active-call controls
+
+GlassifAI starts a capability-free `DeviceStateSession` alongside an active glasses call and subscribes to `WearablesInterface.addDeviceSessionStateListener`.
+
+Meta DAT exposes resulting session states, not raw gesture events:
+
+```text
+running → paused   temple tap   → toggle microphone mute
+paused → running   temple tap   → toggle microphone mute
+active → stopped   long press, doff, fold, or link loss → end call
+```
+
+The state interpreter ignores an initial `stopped` value and suppresses the `stopped` transition produced by GlassifAI's own teardown, preventing a false hang-up or recursive stop. It also emits at most one end action for a stopped session.
+
+The microphone mute is implemented by disabling the local WebRTC audio track. The realtime call and output audio remain active, so a second temple tap can restore the microphone without renegotiating the call.
+
+This is hands-free control after call start, not a cold-start wake word. The user starts the call once from the iPhone; while the call is active, HFP audio and DAT state transitions allow the phone to stay in a pocket. Because DAT does not provide a stop reason, GlassifAI cannot distinguish long-press from doff, fold, or Bluetooth/session loss.
 
 ## Visual-question lifecycle
 

@@ -156,3 +156,29 @@ class ViewModelIntegrationTests: XCTestCase {
     XCTAssertTrue([.stopped, .waiting].contains(viewModel.streamingStatus))
   }
 }
+
+final class GlassesGestureInterpreterTests: XCTestCase {
+  func testRunningPausedTransitionsToggleMicrophoneMute() {
+    var interpreter = GlassesGestureInterpreter()
+
+    XCTAssertNil(interpreter.receive(.waitingForDevice))
+    XCTAssertNil(interpreter.receive(.running))
+    XCTAssertEqual(interpreter.receive(.paused), .toggleMicrophoneMute)
+    XCTAssertEqual(interpreter.receive(.running), .toggleMicrophoneMute)
+  }
+
+  func testStopAfterActiveSessionEndsCallOnce() {
+    var interpreter = GlassesGestureInterpreter()
+
+    XCTAssertNil(interpreter.receive(.running))
+    XCTAssertEqual(interpreter.receive(.stopped), .endCall)
+    XCTAssertNil(interpreter.receive(.stopped))
+  }
+
+  func testInitialStoppedStateDoesNotEndCall() {
+    var interpreter = GlassesGestureInterpreter()
+
+    XCTAssertNil(interpreter.receive(.stopped))
+    XCTAssertNil(interpreter.receive(.unknown))
+  }
+}

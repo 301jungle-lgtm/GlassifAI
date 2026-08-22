@@ -21,6 +21,7 @@
 		9DD894B32F4047630090B9B9 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DD894B02F4047630090B9B9 /* SettingsView.swift */; };
 		BB20CAFE0000000000000001 /* LiveKitWebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = BB20CAFE0000000000000002 /* LiveKitWebRTC */; };
 		CC30CAFE0000000000000001 /* GlassifAICodex.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = CC30CAFE0000000000000002 /* GlassifAICodex.xcframework */; };
+		DD40CAFE0000000000000001 /* MWDATMockDevice in Frameworks */ = {isa = PBXBuildFile; productRef = DD40CAFE0000000000000002 /* MWDATMockDevice */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -78,6 +79,14 @@
 				8FD96B952E6F0F7D00F56AB2 /* MWDATCamera in Frameworks */,
 				BB20CAFE0000000000000001 /* LiveKitWebRTC in Frameworks */,
 				CC30CAFE0000000000000001 /* GlassifAICodex.xcframework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DD40CAFE0000000000000003 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DD40CAFE0000000000000001 /* MWDATMockDevice in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -184,6 +193,7 @@
 			buildConfigurationList = E699CC9D2E8150670052C240 /* Build configuration list for PBXNativeTarget "GlassifAITests" */;
 			buildPhases = (
 				E699CC912E8150670052C240 /* Sources */,
+				DD40CAFE0000000000000003 /* Frameworks */,
 				E699CC932E8150670052C240 /* Resources */,
 			);
 			buildRules = (
@@ -196,6 +206,7 @@
 			);
 			name = GlassifAITests;
 			packageProductDependencies = (
+				DD40CAFE0000000000000002 /* MWDATMockDevice */,
 			);
 			productName = GlassifAITests;
 			productReference = E699CC952E8150670052C240 /* GlassifAITests.xctest */;
@@ -584,6 +595,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 95F7F3332DEF0D91006D1C1A /* XCRemoteSwiftPackageReference "meta-wearables-dat-ios" */;
 			productName = MWDATCamera;
+		};
+		DD40CAFE0000000000000002 /* MWDATMockDevice */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 95F7F3332DEF0D91006D1C1A /* XCRemoteSwiftPackageReference "meta-wearables-dat-ios" */;
+			productName = MWDATMockDevice;
 		};
 		BB20CAFE0000000000000002 /* LiveKitWebRTC */ = {
 			isa = XCSwiftPackageProductDependency;

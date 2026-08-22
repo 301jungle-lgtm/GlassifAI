@@ -21,6 +21,7 @@ GlassifAI sees through your iPhone or Ray-Ban Meta camera, listens through a nat
 ## Why it is different
 
 - **Talk naturally** — native, interruptible WebRTC voice with spoken responses.
+- **Stay hands-free once connected** — glasses HFP audio carries the mic and speaker; a temple tap mutes/unmutes, while long-press, doff, or fold ends the call.
 - **Ask about the world** — “What am I looking at?”, signs, screens, objects, colors, and documents.
 - **Use the camera you want** — switch between the iPhone and connected Meta glasses.
 - **One clean login** — OpenAI’s device-code flow; no embedded web-session workaround.
@@ -86,10 +87,11 @@ Open `ios/GlassifAI.xcodeproj` to select your signing team and run from Xcode. T
 1. Tap **Continue with ChatGPT**.
 2. Complete OpenAI’s device-code verification in the browser.
 3. Choose **iPhone** or **Glasses** as the vision source.
-4. Tap the waveform and speak.
-5. Ask “What am I looking at?” or “Cosa sto guardando?”
+4. Tap the waveform once to start the call. With **Glasses** selected, GlassifAI prefers their Bluetooth HFP microphone and speaker.
+5. During the call, tap the glasses temple to mute/unmute the microphone. Long-pressing, taking off, or folding the glasses ends the call.
+6. Ask “What am I looking at?” or “Cosa sto guardando?”
 
-For Meta glasses, enable Developer Mode in Meta AI and ensure the Wearables Developer Center callback scheme matches `glassifai://`.
+For Meta glasses, enable Developer Mode in Meta AI and ensure the Wearables Developer Center callback scheme matches `glassifai://`. DAT exposes session-state changes rather than raw gesture events, so long-press, doff, fold, and link loss cannot be distinguished. Cold-starting a call from the glasses is not supported; the temple controls become active after the call starts.
 
 ## Repository layout
 

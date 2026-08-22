@@ -11,6 +11,8 @@ All notable GlassifAI changes are documented here. The project follows [Keep a C
 - `com.marcoiannello.GlassifAI` application identifier.
 - Reproducible native bridge build script and curated standalone repository.
 - Detailed architecture, authentication, build, security-model, and Codex-to-iOS port documentation.
+- Hands-free active-call controls on Meta glasses: Bluetooth HFP audio, temple-tap microphone mute/unmute, and long-press/doff/fold call termination.
+- Deterministic tests for DAT session-state gesture interpretation.
 
 ### Changed
 

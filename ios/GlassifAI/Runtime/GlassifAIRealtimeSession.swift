@@ -17,6 +17,7 @@ final class GlassifAIRealtimeSession: NSObject, ObservableObject {
   @Published private(set) var state: State = .disconnected
   @Published private(set) var userTranscript = ""
   @Published private(set) var assistantCaption = ""
+  @Published private(set) var isMicrophoneMuted = false
 
   var isActive: Bool {
     switch state {
@@ -29,6 +30,8 @@ final class GlassifAIRealtimeSession: NSObject, ObservableObject {
   private var peer: LKRTCPeerConnection?
   private var dataChannel: LKRTCDataChannel?
   private var audioTrack: LKRTCAudioTrack?
+  private var audioRouteObserver: NSObjectProtocol?
+  private var prefersBluetoothHFP = false
   private var latestVisionJPEG: Data?
   private var latestVisionDate = Date.distantPast
   private var visionTask: Task<Void, Never>?
@@ -36,18 +39,18 @@ final class GlassifAIRealtimeSession: NSObject, ObservableObject {
   private var streamingCaptionRole = ""
   private var streamingCaptionMessageId = ""
   private var streamingCaptionText = ""
-
-  func start() async {
+  func start(prefersBluetoothHFP: Bool = false) async {
     guard !isActive else { return }
     state = .connecting
     userTranscript = ""
+    isMicrophoneMuted = false
     assistantCaption = ""
     streamingCaptionRole = ""
     streamingCaptionMessageId = ""
     streamingCaptionText = ""
 
     do {
-      try configureAudioSession()
+      try configureAudioSession(prefersBluetoothHFP: prefersBluetoothHFP)
       let configuration = LKRTCConfiguration()
       configuration.sdpSemantics = .unifiedPlan
       configuration.bundlePolicy = .maxBundle
@@ -73,6 +76,7 @@ final class GlassifAIRealtimeSession: NSObject, ObservableObject {
       let source = factory.audioSource(with: audioConstraints)
       let audioTrack = factory.audioTrack(with: source, trackId: "glassifai-audio")
       self.audioTrack = audioTrack
+      audioTrack.isEnabled = !isMicrophoneMuted
       guard peer.add(audioTrack, streamIds: ["glassifai"]) != nil else {
         throw RealtimeError.audioTrackFailed
       }
@@ -133,6 +137,12 @@ final class GlassifAIRealtimeSession: NSObject, ObservableObject {
       "payload": ["action": "stop_speaking"],
     ])
     if isActive { state = .listening }
+  }
+
+  func toggleMicrophoneMuted() {
+    guard isActive else { return }
+    isMicrophoneMuted.toggle()
+    audioTrack?.isEnabled = !isMicrophoneMuted
   }
 
   private func createDirectRealtimeCall(sdp: String) async throws -> String {
@@ -255,6 +265,7 @@ final class GlassifAIRealtimeSession: NSObject, ObservableObject {
     visionTask?.cancel()
     sidebandEventTask?.cancel()
     sidebandEventTask = nil
+    isMicrophoneMuted = false
     visionTask = nil
     EmbeddedCodexBridge.closeRealtime()
     dataChannel?.delegate = nil
@@ -265,16 +276,63 @@ final class GlassifAIRealtimeSession: NSObject, ObservableObject {
     peer?.delegate = nil
     peer?.close()
     peer = nil
+    if let audioRouteObserver {
+      NotificationCenter.default.removeObserver(audioRouteObserver)
+      self.audioRouteObserver = nil
+    }
+    prefersBluetoothHFP = false
     try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
   }
-
-  private func configureAudioSession() throws {
+  private func configureAudioSession(prefersBluetoothHFP: Bool) throws {
     let session = AVAudioSession.sharedInstance()
-    try session.setCategory(
-      .playAndRecord,
-      mode: .voiceChat,
-      options: [.defaultToSpeaker, .allowBluetoothHFP, .mixWithOthers])
+    var options: AVAudioSession.CategoryOptions = [.allowBluetoothHFP, .mixWithOthers]
+    if !prefersBluetoothHFP {
+      options.insert(.defaultToSpeaker)
+    }
+    try session.setCategory(.playAndRecord, mode: .voiceChat, options: options)
     try session.setActive(true)
+    self.prefersBluetoothHFP = prefersBluetoothHFP
+    if let audioRouteObserver {
+      NotificationCenter.default.removeObserver(audioRouteObserver)
+    }
+    audioRouteObserver = NotificationCenter.default.addObserver(
+      forName: AVAudioSession.routeChangeNotification,
+      object: session,
+      queue: .main
+    ) { [weak self] _ in
+      Task { @MainActor in
+        self?.refreshPreferredAudioRoute()
+      }
+    }
+
+    try applyPreferredAudioRoute()
+  }
+
+  private func refreshPreferredAudioRoute() {
+    do {
+      try applyPreferredAudioRoute()
+    } catch {
+      NSLog("[GlassifAI] audio route refresh failed: %@", error.localizedDescription)
+    }
+  }
+
+  private func applyPreferredAudioRoute() throws {
+    guard prefersBluetoothHFP else { return }
+    let session = AVAudioSession.sharedInstance()
+    if session.currentRoute.inputs.contains(where: { $0.portType == .bluetoothHFP }) {
+      return
+    }
+    if let glassesInput = session.availableInputs?.first(where: { $0.portType == .bluetoothHFP }) {
+      try session.overrideOutputAudioPort(.none)
+      try session.setPreferredInput(glassesInput)
+      NSLog("[GlassifAI] audio routed to Bluetooth HFP: %@", glassesInput.portName)
+    } else {
+      if session.currentRoute.outputs.contains(where: { $0.portType == .builtInSpeaker }) {
+        return
+      }
+      try session.overrideOutputAudioPort(.speaker)
+      NSLog("[GlassifAI] Bluetooth HFP unavailable; using iPhone audio")
+    }
   }
 
   private func createOffer(

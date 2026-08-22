@@ -11,6 +11,7 @@ struct StreamSessionView: View {
   @AppStorage(CaptureSource.defaultsKey) private var captureSourceRaw = CaptureSource.iPhoneCamera.rawValue
   @State private var glassesAutoStarted = false
   @State private var glassesRegistered = false
+  @State private var gestureSession: GlassesGestureSession?
   @Environment(\.scenePhase) private var scenePhase
 
   private var captureSource: CaptureSource {
@@ -62,17 +63,28 @@ struct StreamSessionView: View {
     .task {
       camera.onVisionJPEG = { jpeg in voice.submitVisionJPEG(jpeg) }
       viewModel.onVisionJPEG = { jpeg in voice.submitVisionJPEG(jpeg) }
+      if gestureSession == nil, let wearables {
+        gestureSession = GlassesGestureSession(wearables: wearables)
+      }
       glassesRegistered =
         wearablesViewModel?.registrationState == .registered ||
         wearablesViewModel?.hasMockDevice == true
       await activateCaptureSource()
+      await updateGestureSession()
     }
     .onChange(of: captureSourceRaw) { _, _ in
       glassesAutoStarted = false
       Task {
+        await gestureSession?.stop()
         await voice.stop()
         await activateCaptureSource()
       }
+    }
+    .onChange(of: voice.state) { _, _ in
+      Task { await updateGestureSession() }
+    }
+    .onChange(of: wearablesViewModel?.devices.first) { _, _ in
+      Task { await updateGestureSession() }
     }
     .onChange(of: scenePhase) { _, phase in
       guard phase == .active, captureSource == .glasses else { return }
@@ -81,6 +93,7 @@ struct StreamSessionView: View {
     }
     .onDisappear {
       Task {
+        await gestureSession?.stop()
         await voice.stop()
         await camera.stop()
         if viewModel.isStreaming { await viewModel.stopSession() }
@@ -91,6 +104,32 @@ struct StreamSessionView: View {
     } message: {
       Text(viewModel.errorMessage)
     }
+  }
+
+  private func updateGestureSession() async {
+    guard captureSource == .glasses,
+          voice.isActive,
+          let gestureSession,
+          let deviceId = wearablesViewModel?.devices.first ?? wearables?.devices.first else {
+      await gestureSession?.stop()
+      return
+    }
+
+    await gestureSession.start(
+      deviceId: deviceId,
+      onTap: {
+        voice.toggleMicrophoneMuted()
+        NSLog(
+          "[GlassifAI] glasses temple tap: microphone %@",
+          voice.isMicrophoneMuted ? "muted" : "live")
+      },
+      onStop: {
+        Task { @MainActor in
+          if voice.isActive {
+            await voice.stop()
+          }
+        }
+      })
   }
 
   private func activateCaptureSource() async {

@@ -145,6 +145,14 @@ struct GlassifAIExperienceView: View {
             .buttonStyle(.plain)
             .accessibilityLabel("Interrupt response")
             .accessibilityHint("Stops the current response and keeps listening")
+          } else if voice.isActive {
+            Button { voice.toggleMicrophoneMuted() } label: {
+              Image(systemName: voice.isMicrophoneMuted ? "mic.fill" : "mic.slash.fill")
+                .frame(width: 48, height: 48)
+                .background(.thinMaterial, in: Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(voice.isMicrophoneMuted ? "Unmute microphone" : "Mute microphone")
           } else {
             Color.clear.frame(width: 48, height: 48)
           }
@@ -154,22 +162,27 @@ struct GlassifAIExperienceView: View {
     }
     .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: voice.state)
     .animation(reduceMotion ? nil : .easeOut(duration: 0.2), value: caption?.text)
+    .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: voice.isMicrophoneMuted)
   }
 
   private var statusView: some View {
     HStack(spacing: 7) {
       stateGlyph
-      Text(voice.state.shortLabel)
+      Text(voice.isMicrophoneMuted ? "Mic muted" : voice.state.shortLabel)
         .font(.footnote.weight(.medium))
     }
     .foregroundStyle(.white.opacity(0.86))
     .accessibilityElement(children: .combine)
-    .accessibilityLabel("GlassifAI status: \(voice.state.label)")
+    .accessibilityLabel(
+      voice.isMicrophoneMuted ? "GlassifAI status: microphone muted" : "GlassifAI status: \(voice.state.label)")
   }
 
   @ViewBuilder
   private var stateGlyph: some View {
-    switch voice.state {
+    if voice.isMicrophoneMuted {
+      Image(systemName: "mic.slash.fill")
+    } else {
+      switch voice.state {
     case .connecting:
       ProgressView().controlSize(.small).tint(.white)
     case .listening:
@@ -183,13 +196,14 @@ struct GlassifAIExperienceView: View {
     case .disconnected:
       Image(systemName: "circle.fill").font(.system(size: 7))
     }
+    }
   }
 
   private var callButton: some View {
     Button {
       Task {
         if voice.isActive { await voice.stop() }
-        else { await voice.start() }
+        else { await voice.start(prefersBluetoothHFP: captureSource == .glasses) }
       }
     } label: {
       ZStack {

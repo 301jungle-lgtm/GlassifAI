@@ -116,6 +116,27 @@ xcodebuild -project ios/GlassifAI.xcodeproj \
   -destination 'platform=iOS Simulator,id=<simulator-udid>' test
 ```
 
+The gesture transition rules are covered by a fast, pure state-interpreter test:
+
+```bash
+xcodebuild -project ios/GlassifAI.xcodeproj \
+  -scheme GlassifAI \
+  -destination 'platform=iOS Simulator,id=<simulator-udid>' \
+  -only-testing:GlassifAITests/GlassesGestureInterpreterTests test
+```
+
+### Physical glasses gesture check
+
+1. Pair and register the glasses, then select **Glasses** in GlassifAI.
+2. Start a voice call from the iPhone.
+3. Confirm logs show `audio routed to Bluetooth HFP` and `glasses gesture session started`.
+4. Tap the temple once. The app should show **Mic muted** and stop sending microphone audio.
+5. Tap again. The app should return to **Listening** without reconnecting the call.
+6. Long-press the temple. The call should end.
+7. Repeat with doff/fold. It should also end because DAT reports the same `stopped` state.
+
+Cold start is intentionally outside this check: the DAT session and microphone are not active until the user starts a call from the phone.
+
 ## Common failures
 
 ### `GlassifAICodex.xcframework` is missing
@@ -139,3 +160,11 @@ Check that the sideband event loop is connected and that `RealtimeEvent::Handoff
 ### Meta AI opens but does not return
 
 Verify the app URL scheme and Wearables Developer Center callback both use `glassifai://`, then rebuild after changing the bundle or signing team.
+
+### Temple tap does nothing
+
+Confirm the call is active, **Glasses** is the selected source, and the logs show a running gesture session. DAT exposes session-state transitions only while a device session is alive. If the session never reaches `running`, confirm the glasses are unfolded, in range, registered to this app, and not claimed by another third-party DAT app.
+
+### Glasses are selected but audio stays on iPhone
+
+Check whether `AVAudioSession.availableInputs` includes a Bluetooth HFP port. GlassifAI prefers HFP when the call starts; when no HFP input is available it deliberately falls back to the iPhone speaker. Reconnect the glasses before restarting the call.
