@@ -1,23 +1,35 @@
-name: Check GlassifAI Build Environment
+name: Build GlassifAI Framework
 
 on:
   workflow_dispatch:
 
 jobs:
-  check:
+  build:
     runs-on: xcode-27
 
     steps:
       - name: Check out GlassifAI
         uses: actions/checkout@v4
 
-      - name: Show Mac and Xcode versions
+      - name: Show environment
         run: |
           sw_vers
           xcodebuild -version
-          xcode-select -p
-
-      - name: Check Rust
-        run: |
           rustc --version
           cargo --version
+
+      - name: Build GlassifAI native framework
+        run: |
+          chmod +x ./scripts/build-native.sh
+          ./scripts/build-native.sh
+
+      - name: Verify framework
+        run: |
+          ls -la ios/Frameworks/
+          test -d ios/Frameworks/GlassifAICodex.xcframework
+
+      - name: Upload GlassifAI framework
+        uses: actions/upload-artifact@v4
+        with:
+          name: GlassifAICodex-xcframework
+          path: ios/Frameworks/GlassifAICodex.xcframework
