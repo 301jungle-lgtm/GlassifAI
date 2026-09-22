@@ -1,4 +1,4 @@
-name: Build GlassifAI Framework
+Build GlassifAI iOS App
 
 on:
   workflow_dispatch:
@@ -23,13 +23,24 @@ jobs:
           chmod +x ./scripts/build-native.sh
           ./scripts/build-native.sh
 
-      - name: Verify framework
+      - name: Build GlassifAI iOS app
         run: |
-          ls -la ios/Frameworks/
-          test -d ios/Frameworks/GlassifAICodex.xcframework
+          xcodebuild \
+            -project ios/GlassifAI.xcodeproj \
+            -scheme GlassifAI \
+            -destination 'generic/platform=iOS Simulator' \
+            -configuration Debug \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            build
 
-      - name: Upload GlassifAI framework
+      - name: Verify GlassifAI app
+        run: |
+          test -d build/Build/Products/Debug-iphonesimulator/GlassifAI.app
+          ls -la build/Build/Products/Debug-iphonesimulator/GlassifAI.app
+
+      - name: Upload GlassifAI app
         uses: actions/upload-artifact@v4
         with:
-          name: GlassifAICodex-xcframework
-          path: ios/Frameworks/GlassifAICodex.xcframework
+          name: GlassifAI-iOS-Simulator-App
+          path: build/Build/Products/Debug-iphonesimulator/GlassifAI.app
