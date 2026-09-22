@@ -1,4 +1,4 @@
-name: Build GlassifAI iOS App
+name: Build GlassifAI iPhone App
 
 on:
   workflow_dispatch:
@@ -23,24 +23,31 @@ jobs:
           chmod +x ./scripts/build-native.sh
           ./scripts/build-native.sh
 
-      - name: Build GlassifAI iOS app
+      - name: Build unsigned GlassifAI iPhone app
         run: |
           xcodebuild \
             -project ios/GlassifAI.xcodeproj \
             -scheme GlassifAI \
-            -destination 'generic/platform=iOS Simulator' \
+            -destination 'generic/platform=iOS' \
             -configuration Debug \
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
             build
 
-      - name: Verify GlassifAI app
+      - name: Verify GlassifAI iPhone app
         run: |
-          test -d build/Build/Products/Debug-iphonesimulator/GlassifAI.app
-          ls -la build/Build/Products/Debug-iphonesimulator/GlassifAI.app
+          test -d build/Build/Products/Debug-iphoneos/GlassifAI.app
+          ls -la build/Build/Products/Debug-iphoneos/GlassifAI.app
 
-      - name: Upload GlassifAI app
+      - name: Package unsigned IPA
+        run: |
+          mkdir -p Payload
+          cp -R build/Build/Products/Debug-iphoneos/GlassifAI.app Payload/
+          zip -r GlassifAI-unsigned.ipa Payload
+
+      - name: Upload unsigned GlassifAI IPA
         uses: actions/upload-artifact@v4
         with:
-          name: GlassifAI-iOS-Simulator-App
-          path: build/Build/Products/Debug-iphonesimulator/GlassifAI.app
+          name: GlassifAI-unsigned-iPhone-IPA
+          path: GlassifAI-unsigned.ipa
