@@ -1,4 +1,4 @@
-Build GlassifAI iOS App
+name: Build GlassifAI iOS App
 
 on:
   workflow_dispatch:
